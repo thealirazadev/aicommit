@@ -15,3 +15,17 @@ def test_cli_runs() -> None:
     runner = CliRunner()
     result = runner.invoke(main, [])
     assert result.exit_code == 0
+
+
+def test_version_flag() -> None:
+    runner = CliRunner()
+    result = runner.invoke(main, ["--version"])
+    assert result.exit_code == 0
+    assert result.output.strip() == f"aicommit {aicommit.__version__}"
+
+
+def test_help_flag() -> None:
+    runner = CliRunner()
+    result = runner.invoke(main, ["--help"])
+    assert result.exit_code == 0
+    assert "Usage" in result.output
