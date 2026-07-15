@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
+import tempfile
 
-from aicommit.errors import NoStagedChangesError, NotAGitRepoError
+from aicommit.errors import GitCommitError, NoStagedChangesError, NotAGitRepoError
 
 
 def _run_git(args: list[str]) -> subprocess.CompletedProcess[str]:
@@ -32,3 +34,18 @@ def require_staged_diff() -> str:
     if not diff.strip():
         raise NoStagedChangesError()
     return diff
+
+
+def create_commit(message: str) -> str:
+    """Create a commit via `git commit -F <tmpfile>`; return the short SHA."""
+    fd, tmp_path = tempfile.mkstemp(suffix=".txt")
+    try:
+        with os.fdopen(fd, "w") as tmp_file:
+            tmp_file.write(message)
+        result = _run_git(["commit", "-F", tmp_path])
+        if result.returncode != 0:
+            lines = (result.stderr or result.stdout).strip().splitlines()
+            raise GitCommitError(lines[0] if lines else "unknown error")
+    finally:
+        os.unlink(tmp_path)
+    return _run_git(["rev-parse", "--short", "HEAD"]).stdout.strip()

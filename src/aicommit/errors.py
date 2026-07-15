@@ -49,3 +49,13 @@ class ApiError(AicommitError):
 
     def __init__(self, message: str, detail: str | None = None) -> None:
         super().__init__(message, exit_code=6, detail=detail)
+
+
+class GitCommitError(AicommitError):
+    """Raised when `git commit` exits non-zero."""
+
+    def __init__(self, git_stderr_first_line: str) -> None:
+        super().__init__(
+            f"git commit failed: {git_stderr_first_line}",
+            exit_code=7,
+        )
