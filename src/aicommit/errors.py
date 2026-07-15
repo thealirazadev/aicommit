@@ -31,3 +31,21 @@ class NoStagedChangesError(AicommitError):
             "No staged changes. Stage files with 'git add' first.",
             exit_code=3,
         )
+
+
+class AuthError(AicommitError):
+    """Raised when the Anthropic API key is missing or invalid."""
+
+    def __init__(self, detail: str | None = None) -> None:
+        super().__init__(
+            "Anthropic API key missing or invalid. Set ANTHROPIC_API_KEY.",
+            exit_code=5,
+            detail=detail,
+        )
+
+
+class ApiError(AicommitError):
+    """Raised for network, rate-limit, or server errors from the Anthropic API."""
+
+    def __init__(self, message: str, detail: str | None = None) -> None:
+        super().__init__(message, exit_code=6, detail=detail)
