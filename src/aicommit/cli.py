@@ -31,11 +31,21 @@ _stdout = Console()
     default=False,
     help="Print the drafted message and exit without committing.",
 )
+@click.option(
+    "--yes",
+    "-y",
+    "yes_",
+    is_flag=True,
+    default=False,
+    help="Accept the first draft and commit without prompting.",
+)
 @click.version_option(
     version=__version__, prog_name="aicommit", message="%(prog)s %(version)s"
 )
-def main(model: str | None, dry_run: bool) -> None:
+def main(model: str | None, dry_run: bool, yes_: bool) -> None:
     """Draft a Conventional Commit message from the staged git diff."""
+    if dry_run and yes_:
+        raise click.UsageError("--dry-run and --yes cannot be used together.")
     try:
         config = load_config(model=model)
         diff = git.require_staged_diff()
@@ -44,7 +54,7 @@ def main(model: str | None, dry_run: bool) -> None:
             _stdout.print(message)
             raise SystemExit(0)
         present_message(_stdout, message)
-        choice = prompt_choice(_stdout)
+        choice = "a" if yes_ else prompt_choice(_stdout)
         if choice == "q":
             _console.print("Aborted.", style="red")
             raise SystemExit(130)

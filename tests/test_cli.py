@@ -100,6 +100,25 @@ def test_dry_run_prints_without_committing(temp_git_repo, monkeypatch) -> None:
     assert head.returncode != 0
 
 
+def test_yes_commits_first_draft_without_prompting(temp_git_repo, monkeypatch) -> None:
+    monkeypatch.setattr(
+        "aicommit.cli.draft_message",
+        lambda diff, config: "fix(cli): handle empty diff",
+    )
+    runner = CliRunner()
+    result = runner.invoke(main, ["--yes"])
+    assert result.exit_code == 0
+    assert "Committed" in result.output
+    subject = _commit_log(temp_git_repo).strip()
+    assert SUBJECT_RE.match(subject)
+
+
+def test_dry_run_and_yes_together_is_usage_error(temp_git_repo) -> None:
+    runner = CliRunner()
+    result = runner.invoke(main, ["--dry-run", "--yes"])
+    assert result.exit_code == 2
+
+
 def test_git_commit_failure_exits_7(temp_git_repo, monkeypatch) -> None:
     monkeypatch.setattr(
         "aicommit.cli.draft_message",
