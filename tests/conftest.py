@@ -35,3 +35,32 @@ def empty_git_repo(tmp_path, monkeypatch):
     _git("config", "user.name", "Test User", cwd=repo)
     monkeypatch.chdir(repo)
     return repo
+
+
+class _FakeTextBlock:
+    def __init__(self, text: str) -> None:
+        self.type = "text"
+        self.text = text
+
+
+class _FakeResponse:
+    def __init__(self, text: str) -> None:
+        self.content = [_FakeTextBlock(text)]
+
+
+class FakeAnthropicClient:
+    """Stand-in for `anthropic.Anthropic`; records calls, never touches the network."""
+
+    def __init__(self, text: str = "feat: add example feature") -> None:
+        self.calls: list[dict] = []
+        self._text = text
+        self.messages = self
+
+    def create(self, **kwargs):
+        self.calls.append(kwargs)
+        return _FakeResponse(self._text)
+
+
+@pytest.fixture
+def fake_anthropic_client():
+    return FakeAnthropicClient()

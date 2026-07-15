@@ -1,0 +1,13 @@
+diff --git a/src/aicommit/git.py b/src/aicommit/git.py
+index 2f00979..4dc55e4 100644
+--- a/src/aicommit/git.py
++++ b/src/aicommit/git.py
+@@ -20,3 +20,8 @@ def read_staged_diff() -> str:
+     """Return the staged diff produced by `git diff --cached`."""
+     result = _run_git(["diff", "--cached"])
+     return result.stdout
++
++
++def is_inside_git_repo_strict() -> bool:
++    """Placeholder used only by tests as a representative diff."""
++    return True
