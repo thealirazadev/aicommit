@@ -1,4 +1,4 @@
-"""Tests for presenting the draft and parsing the accept/quit choice."""
+"""Tests for presenting the draft and parsing the accept/edit/regenerate/quit choice."""
 
 import io
 
@@ -52,3 +52,17 @@ def test_prompt_choice_reprompts_on_invalid() -> None:
     choice = prompt_choice(console, stream=io.StringIO("nope\na\n"))
     assert choice == "a"
     assert "Please enter" in buffer.getvalue()
+
+
+def test_prompt_choice_edit_letter_and_word() -> None:
+    console, _ = _console()
+    assert prompt_choice(console, stream=io.StringIO("e\n")) == "e"
+    console, _ = _console()
+    assert prompt_choice(console, stream=io.StringIO("edit\n")) == "e"
+
+
+def test_prompt_choice_regenerate_letter_and_word() -> None:
+    console, _ = _console()
+    assert prompt_choice(console, stream=io.StringIO("r\n")) == "r"
+    console, _ = _console()
+    assert prompt_choice(console, stream=io.StringIO("regenerate\n")) == "r"
