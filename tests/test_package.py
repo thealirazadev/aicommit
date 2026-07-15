@@ -14,7 +14,7 @@ def test_version_is_defined() -> None:
 def test_cli_runs(temp_git_repo, monkeypatch) -> None:
     monkeypatch.setattr("aicommit.cli.draft_message", lambda diff, config: "feat: x")
     runner = CliRunner()
-    result = runner.invoke(main, [])
+    result = runner.invoke(main, [], input="a\n")
     assert result.exit_code == 0
 
 
