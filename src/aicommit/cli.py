@@ -23,15 +23,26 @@ _stdout = Console()
     default=None,
     help="Override the model id for this run.",
 )
+@click.option(
+    "--dry-run",
+    "-n",
+    "dry_run",
+    is_flag=True,
+    default=False,
+    help="Print the drafted message and exit without committing.",
+)
 @click.version_option(
     version=__version__, prog_name="aicommit", message="%(prog)s %(version)s"
 )
-def main(model: str | None) -> None:
+def main(model: str | None, dry_run: bool) -> None:
     """Draft a Conventional Commit message from the staged git diff."""
     try:
         config = load_config(model=model)
         diff = git.require_staged_diff()
         message = draft_message(diff, config)
+        if dry_run:
+            _stdout.print(message)
+            raise SystemExit(0)
         present_message(_stdout, message)
         choice = prompt_choice(_stdout)
         if choice == "q":

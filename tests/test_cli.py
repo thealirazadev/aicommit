@@ -82,6 +82,24 @@ def test_blank_input_defaults_to_accept(temp_git_repo, monkeypatch) -> None:
     assert "Committed" in result.output
 
 
+def test_dry_run_prints_without_committing(temp_git_repo, monkeypatch) -> None:
+    monkeypatch.setattr(
+        "aicommit.cli.draft_message",
+        lambda diff, config: "fix(cli): handle empty diff",
+    )
+    runner = CliRunner()
+    result = runner.invoke(main, ["--dry-run"])
+    assert result.exit_code == 0
+    assert "fix(cli): handle empty diff" in result.output
+    head = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=temp_git_repo,
+        capture_output=True,
+        text=True,
+    )
+    assert head.returncode != 0
+
+
 def test_git_commit_failure_exits_7(temp_git_repo, monkeypatch) -> None:
     monkeypatch.setattr(
         "aicommit.cli.draft_message",
