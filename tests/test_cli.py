@@ -6,7 +6,7 @@ import subprocess
 from click.testing import CliRunner
 
 from aicommit.cli import main
-from aicommit.errors import ApiError, AuthError
+from aicommit.errors import ApiError, AuthError, GitCommitError
 
 SUBJECT_RE = re.compile(
     r"^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?!?: .+"
@@ -80,6 +80,22 @@ def test_blank_input_defaults_to_accept(temp_git_repo, monkeypatch) -> None:
     result = runner.invoke(main, [], input="\n")
     assert result.exit_code == 0
     assert "Committed" in result.output
+
+
+def test_git_commit_failure_exits_7(temp_git_repo, monkeypatch) -> None:
+    monkeypatch.setattr(
+        "aicommit.cli.draft_message",
+        lambda diff, config: "fix(cli): handle empty diff",
+    )
+
+    def _raise(message):
+        raise GitCommitError("fatal: unable to write new index file")
+
+    monkeypatch.setattr("aicommit.git.create_commit", _raise)
+    runner = CliRunner()
+    result = runner.invoke(main, [], input="a\n")
+    assert result.exit_code == 7
+    assert "fatal: unable to write new index file" in result.output
 
 
 def test_auth_error_exits_5(temp_git_repo, monkeypatch) -> None:
