@@ -11,7 +11,7 @@ def test_version_is_defined() -> None:
     assert aicommit.__version__
 
 
-def test_cli_runs() -> None:
+def test_cli_runs(temp_git_repo) -> None:
     runner = CliRunner()
     result = runner.invoke(main, [])
     assert result.exit_code == 0
