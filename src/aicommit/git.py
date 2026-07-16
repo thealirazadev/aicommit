@@ -26,6 +26,25 @@ def read_staged_diff() -> str:
     return result.stdout
 
 
+def read_staged_diffstat() -> str:
+    """Return the diffstat summary produced by `git diff --cached --stat`."""
+    result = _run_git(["diff", "--cached", "--stat"])
+    return result.stdout
+
+
+def build_diff_payload(diff: str, max_diff_bytes: int) -> tuple[str, bool]:
+    """Return the text to send to the model, and whether it was summarized.
+
+    If `diff` fits within `max_diff_bytes`, it is returned unchanged. Above
+    the cap, return the diffstat summary plus a byte-truncated diff instead.
+    """
+    encoded = diff.encode()
+    if len(encoded) <= max_diff_bytes:
+        return diff, False
+    truncated = encoded[:max_diff_bytes].decode(errors="ignore")
+    return f"{read_staged_diffstat()}\n{truncated}", True
+
+
 def require_staged_diff() -> str:
     """Return the staged diff, raising if not in a repo or nothing is staged."""
     if not is_inside_git_repo():

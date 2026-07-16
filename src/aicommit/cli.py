@@ -145,6 +145,13 @@ def main(
     try:
         config = load_config(model=model, commit_type=commit_type, scope=scope)
         diff = git.require_staged_diff()
+        diff, was_summarized = git.build_diff_payload(diff, config.max_diff_bytes)
+        if was_summarized:
+            _console.print(
+                "Warning: Diff is large; sending a summary. "
+                "Use a smaller staged change for detail.",
+                style="yellow",
+            )
         message = _draft_and_log(
             logger,
             diff,

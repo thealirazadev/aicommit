@@ -6,6 +6,7 @@ import os
 from dataclasses import dataclass
 
 DEFAULT_MODEL = "claude-opus-4-8"
+DEFAULT_MAX_DIFF_BYTES = 100_000
 
 
 @dataclass(frozen=True)
@@ -15,6 +16,7 @@ class Config:
     model: str = DEFAULT_MODEL
     commit_type: str | None = None
     scope: str | None = None
+    max_diff_bytes: int = DEFAULT_MAX_DIFF_BYTES
 
 
 def load_config(

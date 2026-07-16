@@ -7,6 +7,7 @@ from click.testing import CliRunner
 
 from aicommit import cli
 from aicommit.cli import main
+from aicommit.config import Config
 from aicommit.errors import ApiError, AuthError, GitCommitError
 
 SUBJECT_RE = re.compile(
@@ -311,6 +312,23 @@ def test_no_color_env_var_strips_ansi(temp_git_repo, monkeypatch) -> None:
     runner = CliRunner()
     result = runner.invoke(main, ["--yes"])
     assert "\x1b[" not in result.output
+
+
+def test_oversized_diff_warns_and_still_drafts(temp_git_repo, monkeypatch) -> None:
+    (temp_git_repo / "example.txt").write_text("x" * 500 + "\n")
+    subprocess.run(["git", "add", "example.txt"], cwd=temp_git_repo, check=True)
+    monkeypatch.setattr(
+        "aicommit.cli.load_config", lambda **kwargs: Config(max_diff_bytes=50)
+    )
+    monkeypatch.setattr(
+        "aicommit.cli.draft_message",
+        lambda diff, config: "fix(cli): handle large diff",
+    )
+    runner = CliRunner()
+    result = runner.invoke(main, ["--yes"])
+    assert result.exit_code == 0
+    assert "Warning:" in result.output
+    assert "Committed" in result.output
 
 
 def test_type_and_scope_flags_reach_config(temp_git_repo, monkeypatch) -> None:

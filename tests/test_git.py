@@ -27,6 +27,35 @@ def test_read_staged_diff_empty_when_nothing_staged(empty_git_repo) -> None:
     assert diff.strip() == ""
 
 
+def test_read_staged_diffstat_summarizes_changed_file(temp_git_repo) -> None:
+    stat = git.read_staged_diffstat()
+    assert "example.txt" in stat
+    assert "1 file changed" in stat
+
+
+def test_build_diff_payload_passes_through_small_diff() -> None:
+    payload, was_summarized = git.build_diff_payload("small diff", max_diff_bytes=100)
+    assert payload == "small diff"
+    assert was_summarized is False
+
+
+def test_read_staged_diff_does_not_inline_binary_content(temp_git_repo) -> None:
+    binary_path = temp_git_repo / "image.bin"
+    binary_path.write_bytes(bytes(range(256)))
+    subprocess.run(["git", "add", "image.bin"], cwd=temp_git_repo, check=True)
+    diff = git.read_staged_diff()
+    assert "Binary files" in diff
+    assert bytes(range(256)).decode("latin1") not in diff
+
+
+def test_build_diff_payload_summarizes_oversized_diff(temp_git_repo) -> None:
+    diff = git.read_staged_diff()
+    payload, was_summarized = git.build_diff_payload(diff, max_diff_bytes=5)
+    assert was_summarized is True
+    assert "example.txt" in payload
+    assert len(payload.encode()) < len(diff.encode())
+
+
 def test_require_staged_diff_returns_diff_text(temp_git_repo) -> None:
     diff = git.require_staged_diff()
     assert "example.txt" in diff
