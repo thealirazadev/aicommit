@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import contextlib
+
 import click
 from rich.console import Console
 
@@ -13,6 +15,13 @@ from aicommit.model import draft_message
 
 _console = Console(stderr=True)
 _stdout = Console()
+
+
+def _drafting_status(text: str):
+    """Return a spinner context manager, or a no-op one off a TTY."""
+    if _stdout.is_terminal:
+        return _stdout.status(text)
+    return contextlib.nullcontext()
 
 
 @click.command()
@@ -57,7 +66,8 @@ def main(model: str | None, dry_run: bool, yes_: bool, edit_: bool) -> None:
     try:
         config = load_config(model=model)
         diff = git.require_staged_diff()
-        message = draft_message(diff, config)
+        with _drafting_status("Drafting commit message..."):
+            message = draft_message(diff, config)
         if dry_run:
             _stdout.print(message)
             raise SystemExit(0)
@@ -78,7 +88,8 @@ def main(model: str | None, dry_run: bool, yes_: bool, edit_: bool) -> None:
                 present_message(_stdout, message)
                 continue
             if choice == "r":
-                message = draft_message(diff, config)
+                with _drafting_status("Regenerating..."):
+                    message = draft_message(diff, config)
                 present_message(_stdout, message)
                 continue
             break

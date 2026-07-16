@@ -5,6 +5,7 @@ import subprocess
 
 from click.testing import CliRunner
 
+from aicommit import cli
 from aicommit.cli import main
 from aicommit.errors import ApiError, AuthError, GitCommitError
 
@@ -195,6 +196,53 @@ def test_edit_flag_with_yes_commits_edited_message_without_prompt(
     assert result.exit_code == 0
     subject = _commit_log(temp_git_repo).strip()
     assert subject == "feat(cli): pre-edited"
+
+
+class _FakeStatus:
+    """Records the spinner text and acts as a no-op context manager."""
+
+    def __init__(self, texts: list[str]) -> None:
+        self._texts = texts
+
+    def __call__(self, text: str) -> "_FakeStatus":
+        self._texts.append(text)
+        return self
+
+    def __enter__(self) -> "_FakeStatus":
+        return self
+
+    def __exit__(self, *exc_info: object) -> None:
+        return None
+
+
+def test_spinner_shown_on_tty_for_draft_and_regenerate(
+    temp_git_repo, monkeypatch
+) -> None:
+    monkeypatch.setattr(
+        "aicommit.cli.draft_message",
+        lambda diff, config: "fix(cli): handle empty diff",
+    )
+    monkeypatch.setattr(cli._stdout, "_force_terminal", True)
+    texts: list[str] = []
+    monkeypatch.setattr(cli._stdout, "status", _FakeStatus(texts))
+    runner = CliRunner()
+    result = runner.invoke(main, [], input="r\na\n")
+    assert result.exit_code == 0
+    assert texts == ["Drafting commit message...", "Regenerating..."]
+
+
+def test_no_spinner_off_a_tty(temp_git_repo, monkeypatch) -> None:
+    monkeypatch.setattr(
+        "aicommit.cli.draft_message",
+        lambda diff, config: "fix(cli): handle empty diff",
+    )
+    monkeypatch.setattr(cli._stdout, "_force_terminal", False)
+    texts: list[str] = []
+    monkeypatch.setattr(cli._stdout, "status", _FakeStatus(texts))
+    runner = CliRunner()
+    result = runner.invoke(main, [], input="a\n")
+    assert result.exit_code == 0
+    assert texts == []
 
 
 def test_dry_run_and_yes_together_is_usage_error(temp_git_repo) -> None:
