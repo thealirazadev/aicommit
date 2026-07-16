@@ -59,3 +59,13 @@ class GitCommitError(AicommitError):
             f"git commit failed: {git_stderr_first_line}",
             exit_code=7,
         )
+
+
+class EmptyMessageError(AicommitError):
+    """Raised when an edited commit message is blank after editing."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            "Commit message is empty; nothing committed.",
+            exit_code=1,
+        )

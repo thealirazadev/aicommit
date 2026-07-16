@@ -2,8 +2,10 @@
 
 import io
 
+import pytest
 from rich.console import Console
 
+from aicommit.errors import EmptyMessageError
 from aicommit.message import edit_message, present_message, prompt_choice
 
 
@@ -76,3 +78,9 @@ def test_edit_message_returns_edited_text(monkeypatch) -> None:
 def test_edit_message_falls_back_when_editor_reports_no_change(monkeypatch) -> None:
     monkeypatch.setattr("aicommit.message.click.edit", lambda text: None)
     assert edit_message("feat: original") == "feat: original"
+
+
+def test_edit_message_raises_on_blank_save(monkeypatch) -> None:
+    monkeypatch.setattr("aicommit.message.click.edit", lambda text: "   \n")
+    with pytest.raises(EmptyMessageError):
+        edit_message("feat: original")
