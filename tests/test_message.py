@@ -4,7 +4,7 @@ import io
 
 from rich.console import Console
 
-from aicommit.message import present_message, prompt_choice
+from aicommit.message import edit_message, present_message, prompt_choice
 
 
 def _console() -> tuple[Console, io.StringIO]:
@@ -66,3 +66,13 @@ def test_prompt_choice_regenerate_letter_and_word() -> None:
     assert prompt_choice(console, stream=io.StringIO("r\n")) == "r"
     console, _ = _console()
     assert prompt_choice(console, stream=io.StringIO("regenerate\n")) == "r"
+
+
+def test_edit_message_returns_edited_text(monkeypatch) -> None:
+    monkeypatch.setattr("aicommit.message.click.edit", lambda text: "fix: edited\n")
+    assert edit_message("feat: original") == "fix: edited"
+
+
+def test_edit_message_falls_back_when_editor_reports_no_change(monkeypatch) -> None:
+    monkeypatch.setattr("aicommit.message.click.edit", lambda text: None)
+    assert edit_message("feat: original") == "feat: original"

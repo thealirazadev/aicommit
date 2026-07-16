@@ -8,7 +8,7 @@ from rich.console import Console
 from aicommit import __version__, git
 from aicommit.config import load_config
 from aicommit.errors import AicommitError
-from aicommit.message import present_message, prompt_choice
+from aicommit.message import edit_message, present_message, prompt_choice
 from aicommit.model import draft_message
 
 _console = Console(stderr=True)
@@ -53,11 +53,21 @@ def main(model: str | None, dry_run: bool, yes_: bool) -> None:
         if dry_run:
             _stdout.print(message)
             raise SystemExit(0)
+        if yes_:
+            sha = git.create_commit(message)
+            _stdout.print(f"Committed {sha}", style="green")
+            raise SystemExit(0)
         present_message(_stdout, message)
-        choice = "a" if yes_ else prompt_choice(_stdout)
-        if choice == "q":
-            _console.print("Aborted.", style="red")
-            raise SystemExit(130)
+        while True:
+            choice = prompt_choice(_stdout)
+            if choice == "q":
+                _console.print("Aborted.", style="red")
+                raise SystemExit(130)
+            if choice == "e":
+                message = edit_message(message)
+                present_message(_stdout, message)
+                continue
+            break
         sha = git.create_commit(message)
         _stdout.print(f"Committed {sha}", style="green")
     except AicommitError as error:

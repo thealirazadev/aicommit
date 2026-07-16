@@ -113,6 +113,22 @@ def test_yes_commits_first_draft_without_prompting(temp_git_repo, monkeypatch) -
     assert SUBJECT_RE.match(subject)
 
 
+def test_edit_then_accept_commits_edited_message(temp_git_repo, monkeypatch) -> None:
+    monkeypatch.setattr(
+        "aicommit.cli.draft_message",
+        lambda diff, config: "fix(cli): handle empty diff",
+    )
+    monkeypatch.setattr(
+        "aicommit.message.click.edit", lambda text: "feat(cli): edited message"
+    )
+    runner = CliRunner()
+    result = runner.invoke(main, [], input="e\na\n")
+    assert result.exit_code == 0
+    assert "Committed" in result.output
+    subject = _commit_log(temp_git_repo).strip()
+    assert subject == "feat(cli): edited message"
+
+
 def test_dry_run_and_yes_together_is_usage_error(temp_git_repo) -> None:
     runner = CliRunner()
     result = runner.invoke(main, ["--dry-run", "--yes"])

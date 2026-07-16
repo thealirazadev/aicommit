@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import IO
 
+import click
 from rich.console import Console
 from rich.panel import Panel
 
@@ -13,6 +14,18 @@ _WORDS = {"a": "accept", "e": "edit", "r": "regenerate", "q": "quit"}
 def present_message(console: Console, message: str) -> None:
     """Render the drafted message in a bordered panel."""
     console.print(Panel(message, title="Proposed commit message"))
+
+
+def edit_message(message: str) -> str:
+    """Open the current draft in `$EDITOR`; return the edited, stripped text.
+
+    Falls back to the original message if the editor reports no change
+    (`click.edit` returns `None` in that case).
+    """
+    edited = click.edit(message)
+    if edited is None:
+        edited = message
+    return edited.strip()
 
 
 def prompt_choice(console: Console, *, stream: IO[str] | None = None) -> str:
