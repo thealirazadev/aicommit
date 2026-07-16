@@ -35,7 +35,14 @@ def draft_message(
             model=config.model,
             max_tokens=1024,
             system=SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": build_prompt(diff)}],
+            messages=[
+                {
+                    "role": "user",
+                    "content": build_prompt(
+                        diff, commit_type=config.commit_type, scope=config.scope
+                    ),
+                }
+            ],
         )
     except (anthropic.AuthenticationError, anthropic.PermissionDeniedError) as error:
         raise AuthError(detail=str(error)) from error

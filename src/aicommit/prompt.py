@@ -17,6 +17,21 @@ the subject with one blank line.
 - Output only the commit message text, nothing else."""
 
 
-def build_prompt(diff: str) -> str:
-    """Return the user-turn prompt embedding the staged diff."""
-    return f"Here is the staged git diff:\n\n{diff}\n\nDraft the commit message."
+def build_prompt(
+    diff: str, *, commit_type: str | None = None, scope: str | None = None
+) -> str:
+    """Return the user-turn prompt embedding the staged diff.
+
+    `commit_type`/`scope`, when given, are passed as hard constraints on the
+    subject line.
+    """
+    constraints = []
+    if commit_type:
+        constraints.append(f'Use "{commit_type}" as the commit type.')
+    if scope:
+        constraints.append(f'Use "{scope}" as the scope, in parentheses.')
+    constraint_text = ("\n" + "\n".join(constraints)) if constraints else ""
+    return (
+        f"Here is the staged git diff:\n\n{diff}\n\n"
+        f"Draft the commit message.{constraint_text}"
+    )

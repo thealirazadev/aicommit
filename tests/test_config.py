@@ -19,3 +19,15 @@ def test_flag_overrides_env(monkeypatch) -> None:
     monkeypatch.setenv("AICOMMIT_MODEL", "claude-sonnet-5")
     config = load_config(model="claude-opus-4-8")
     assert config.model == "claude-opus-4-8"
+
+
+def test_type_and_scope_default_to_none() -> None:
+    config = load_config()
+    assert config.commit_type is None
+    assert config.scope is None
+
+
+def test_type_and_scope_from_flags() -> None:
+    config = load_config(commit_type="fix", scope="api")
+    assert config.commit_type == "fix"
+    assert config.scope == "api"

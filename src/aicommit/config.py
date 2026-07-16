@@ -13,13 +13,21 @@ class Config:
     """Resolved, immutable configuration for a single run."""
 
     model: str = DEFAULT_MODEL
+    commit_type: str | None = None
+    scope: str | None = None
 
 
-def load_config(*, model: str | None = None) -> Config:
+def load_config(
+    *,
+    model: str | None = None,
+    commit_type: str | None = None,
+    scope: str | None = None,
+) -> Config:
     """Resolve a `Config` from defaults, the environment, and CLI flags.
 
     Precedence for `model` (lowest to highest): built-in default <
-    `AICOMMIT_MODEL` < `--model`.
+    `AICOMMIT_MODEL` < `--model`. `commit_type`/`scope` currently come only
+    from CLI flags (config-file layering arrives in a later phase).
     """
     resolved_model = model or os.environ.get("AICOMMIT_MODEL") or DEFAULT_MODEL
-    return Config(model=resolved_model)
+    return Config(model=resolved_model, commit_type=commit_type, scope=scope)

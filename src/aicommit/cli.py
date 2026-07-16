@@ -56,15 +56,36 @@ def _drafting_status(text: str):
     default=False,
     help="Open the drafted message in $EDITOR before the accept step.",
 )
+@click.option(
+    "--type",
+    "-t",
+    "commit_type",
+    default=None,
+    help="Force the Conventional Commit type (e.g. feat, fix).",
+)
+@click.option(
+    "--scope",
+    "-s",
+    "scope",
+    default=None,
+    help="Force the commit scope; appears as type(scope): ...",
+)
 @click.version_option(
     version=__version__, prog_name="aicommit", message="%(prog)s %(version)s"
 )
-def main(model: str | None, dry_run: bool, yes_: bool, edit_: bool) -> None:
+def main(
+    model: str | None,
+    dry_run: bool,
+    yes_: bool,
+    edit_: bool,
+    commit_type: str | None,
+    scope: str | None,
+) -> None:
     """Draft a Conventional Commit message from the staged git diff."""
     if dry_run and yes_:
         raise click.UsageError("--dry-run and --yes cannot be used together.")
     try:
-        config = load_config(model=model)
+        config = load_config(model=model, commit_type=commit_type, scope=scope)
         diff = git.require_staged_diff()
         with _drafting_status("Drafting commit message..."):
             message = draft_message(diff, config)

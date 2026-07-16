@@ -104,6 +104,18 @@ def test_server_status_error_maps_to_api_error() -> None:
         draft_message("diff", Config(), client_factory=lambda: client)
 
 
+def test_draft_message_sends_type_and_scope_constraints(fake_anthropic_client) -> None:
+    config = Config(commit_type="fix", scope="api")
+    draft_message(
+        "diff --git a/f b/f\n",
+        config,
+        client_factory=lambda: fake_anthropic_client,
+    )
+    sent = fake_anthropic_client.calls[0]["messages"][0]["content"]
+    assert '"fix"' in sent
+    assert '"api"' in sent
+
+
 def test_missing_api_key_maps_to_auth_error(monkeypatch) -> None:
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     with pytest.raises(AuthError):

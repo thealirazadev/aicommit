@@ -245,6 +245,21 @@ def test_no_spinner_off_a_tty(temp_git_repo, monkeypatch) -> None:
     assert texts == []
 
 
+def test_type_and_scope_flags_reach_config(temp_git_repo, monkeypatch) -> None:
+    seen: dict = {}
+
+    def _draft(diff, config):
+        seen["commit_type"] = config.commit_type
+        seen["scope"] = config.scope
+        return "fix(api): handle empty diff"
+
+    monkeypatch.setattr("aicommit.cli.draft_message", _draft)
+    runner = CliRunner()
+    result = runner.invoke(main, ["--type", "fix", "--scope", "api", "--yes"])
+    assert result.exit_code == 0
+    assert seen == {"commit_type": "fix", "scope": "api"}
+
+
 def test_dry_run_and_yes_together_is_usage_error(temp_git_repo) -> None:
     runner = CliRunner()
     result = runner.invoke(main, ["--dry-run", "--yes"])
