@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from collections.abc import Callable
 
 import anthropic
@@ -24,6 +25,10 @@ def draft_message(
     Maps SDK errors to the app's typed errors: auth failures -> `AuthError`
     (exit 5), network/rate-limit/server failures -> `ApiError` (exit 6).
     """
+    if client_factory is anthropic.Anthropic and not os.environ.get(
+        "ANTHROPIC_API_KEY"
+    ):
+        raise AuthError(detail="ANTHROPIC_API_KEY is not set")
     client = client_factory()
     try:
         response = client.messages.create(

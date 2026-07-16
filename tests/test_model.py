@@ -104,6 +104,12 @@ def test_server_status_error_maps_to_api_error() -> None:
         draft_message("diff", Config(), client_factory=lambda: client)
 
 
+def test_missing_api_key_maps_to_auth_error(monkeypatch) -> None:
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    with pytest.raises(AuthError):
+        draft_message("diff", Config())
+
+
 def test_client_status_error_is_not_swallowed() -> None:
     error = anthropic.APIStatusError("teapot", response=_response(418), body=None)
     client = _RaisingClient(error)
