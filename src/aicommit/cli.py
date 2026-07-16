@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import os
 import time
 
 import click
@@ -20,8 +21,12 @@ _stdout = Console()
 
 
 def _drafting_status(text: str, *, quiet: bool):
-    """Return a spinner context manager, or a no-op one off a TTY / quiet."""
-    if quiet or not _stdout.is_terminal:
+    """Return a spinner context manager, or a no-op one off a TTY / quiet.
+
+    Also suppressed under `no_color`, since the spinner's cursor-control
+    codes are themselves escape sequences and `no_color` promises none.
+    """
+    if quiet or _stdout.no_color or not _stdout.is_terminal:
         return contextlib.nullcontext()
     return _stdout.status(text)
 
@@ -104,6 +109,13 @@ def _draft_and_log(logger, diff: str, config, *, quiet: bool, event: str, text: 
     default=False,
     help="Emit structured debug logs on stderr.",
 )
+@click.option(
+    "--no-color",
+    "no_color",
+    is_flag=True,
+    default=False,
+    help="Disable ANSI color. Also disabled when NO_COLOR is set.",
+)
 @click.version_option(
     version=__version__, prog_name="aicommit", message="%(prog)s %(version)s"
 )
@@ -116,10 +128,14 @@ def main(
     scope: str | None,
     quiet: bool,
     verbose: bool,
+    no_color: bool,
 ) -> None:
     """Draft a Conventional Commit message from the staged git diff."""
     if dry_run and yes_:
         raise click.UsageError("--dry-run and --yes cannot be used together.")
+    resolved_no_color = no_color or bool(os.environ.get("NO_COLOR"))
+    _console.no_color = resolved_no_color
+    _stdout.no_color = resolved_no_color
     logger = configure_logging(quiet=quiet, verbose=verbose)
 
     def _exit(code: int) -> None:

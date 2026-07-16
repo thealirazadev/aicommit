@@ -275,6 +275,44 @@ def test_verbose_emits_structured_logs_without_key_or_diff(
     assert "sk-super-secret-value" not in result.output
 
 
+def test_color_present_by_default_on_a_forced_terminal(
+    temp_git_repo, monkeypatch
+) -> None:
+    monkeypatch.setattr(
+        "aicommit.cli.draft_message",
+        lambda diff, config: "fix(cli): handle empty diff",
+    )
+    monkeypatch.setattr(cli._stdout, "_force_terminal", True)
+    monkeypatch.delenv("NO_COLOR", raising=False)
+    runner = CliRunner()
+    result = runner.invoke(main, ["--yes"])
+    assert "\x1b[" in result.output
+
+
+def test_no_color_flag_strips_ansi(temp_git_repo, monkeypatch) -> None:
+    monkeypatch.setattr(
+        "aicommit.cli.draft_message",
+        lambda diff, config: "fix(cli): handle empty diff",
+    )
+    monkeypatch.setattr(cli._stdout, "_force_terminal", True)
+    monkeypatch.delenv("NO_COLOR", raising=False)
+    runner = CliRunner()
+    result = runner.invoke(main, ["--yes", "--no-color"])
+    assert "\x1b[" not in result.output
+
+
+def test_no_color_env_var_strips_ansi(temp_git_repo, monkeypatch) -> None:
+    monkeypatch.setattr(
+        "aicommit.cli.draft_message",
+        lambda diff, config: "fix(cli): handle empty diff",
+    )
+    monkeypatch.setattr(cli._stdout, "_force_terminal", True)
+    monkeypatch.setenv("NO_COLOR", "1")
+    runner = CliRunner()
+    result = runner.invoke(main, ["--yes"])
+    assert "\x1b[" not in result.output
+
+
 def test_type_and_scope_flags_reach_config(temp_git_repo, monkeypatch) -> None:
     seen: dict = {}
 
