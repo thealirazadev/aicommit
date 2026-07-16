@@ -148,6 +148,23 @@ def test_edit_empty_save_exits_1_no_commit(temp_git_repo, monkeypatch) -> None:
     assert head.returncode != 0
 
 
+def test_regenerate_makes_second_api_call(temp_git_repo, monkeypatch) -> None:
+    drafts = iter(["fix(cli): first draft", "feat(cli): second draft"])
+    calls: list[str] = []
+
+    def _draft(diff, config):
+        calls.append(diff)
+        return next(drafts)
+
+    monkeypatch.setattr("aicommit.cli.draft_message", _draft)
+    runner = CliRunner()
+    result = runner.invoke(main, [], input="r\na\n")
+    assert result.exit_code == 0
+    assert len(calls) == 2
+    subject = _commit_log(temp_git_repo).strip()
+    assert subject == "feat(cli): second draft"
+
+
 def test_dry_run_and_yes_together_is_usage_error(temp_git_repo) -> None:
     runner = CliRunner()
     result = runner.invoke(main, ["--dry-run", "--yes"])

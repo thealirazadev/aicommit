@@ -67,6 +67,10 @@ def main(model: str | None, dry_run: bool, yes_: bool) -> None:
                 message = edit_message(message)
                 present_message(_stdout, message)
                 continue
+            if choice == "r":
+                message = draft_message(diff, config)
+                present_message(_stdout, message)
+                continue
             break
         sha = git.create_commit(message)
         _stdout.print(f"Committed {sha}", style="green")
