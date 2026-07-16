@@ -39,10 +39,18 @@ _stdout = Console()
     default=False,
     help="Accept the first draft and commit without prompting.",
 )
+@click.option(
+    "--edit",
+    "-e",
+    "edit_",
+    is_flag=True,
+    default=False,
+    help="Open the drafted message in $EDITOR before the accept step.",
+)
 @click.version_option(
     version=__version__, prog_name="aicommit", message="%(prog)s %(version)s"
 )
-def main(model: str | None, dry_run: bool, yes_: bool) -> None:
+def main(model: str | None, dry_run: bool, yes_: bool, edit_: bool) -> None:
     """Draft a Conventional Commit message from the staged git diff."""
     if dry_run and yes_:
         raise click.UsageError("--dry-run and --yes cannot be used together.")
@@ -53,6 +61,8 @@ def main(model: str | None, dry_run: bool, yes_: bool) -> None:
         if dry_run:
             _stdout.print(message)
             raise SystemExit(0)
+        if edit_:
+            message = edit_message(message)
         if yes_:
             sha = git.create_commit(message)
             _stdout.print(f"Committed {sha}", style="green")

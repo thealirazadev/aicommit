@@ -165,6 +165,38 @@ def test_regenerate_makes_second_api_call(temp_git_repo, monkeypatch) -> None:
     assert subject == "feat(cli): second draft"
 
 
+def test_edit_flag_opens_editor_before_prompt(temp_git_repo, monkeypatch) -> None:
+    monkeypatch.setattr(
+        "aicommit.cli.draft_message",
+        lambda diff, config: "fix(cli): handle empty diff",
+    )
+    monkeypatch.setattr(
+        "aicommit.message.click.edit", lambda text: "feat(cli): pre-edited"
+    )
+    runner = CliRunner()
+    result = runner.invoke(main, ["--edit"], input="a\n")
+    assert result.exit_code == 0
+    subject = _commit_log(temp_git_repo).strip()
+    assert subject == "feat(cli): pre-edited"
+
+
+def test_edit_flag_with_yes_commits_edited_message_without_prompt(
+    temp_git_repo, monkeypatch
+) -> None:
+    monkeypatch.setattr(
+        "aicommit.cli.draft_message",
+        lambda diff, config: "fix(cli): handle empty diff",
+    )
+    monkeypatch.setattr(
+        "aicommit.message.click.edit", lambda text: "feat(cli): pre-edited"
+    )
+    runner = CliRunner()
+    result = runner.invoke(main, ["--edit", "--yes"])
+    assert result.exit_code == 0
+    subject = _commit_log(temp_git_repo).strip()
+    assert subject == "feat(cli): pre-edited"
+
+
 def test_dry_run_and_yes_together_is_usage_error(temp_git_repo) -> None:
     runner = CliRunner()
     result = runner.invoke(main, ["--dry-run", "--yes"])
