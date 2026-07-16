@@ -69,3 +69,14 @@ class EmptyMessageError(AicommitError):
             "Commit message is empty; nothing committed.",
             exit_code=1,
         )
+
+
+class ConfigError(AicommitError):
+    """Raised when an optional config file exists but fails to parse."""
+
+    def __init__(self, path: str, detail: str | None = None) -> None:
+        super().__init__(
+            f"Invalid config file at {path}. Fix or remove it.",
+            exit_code=1,
+            detail=detail,
+        )
