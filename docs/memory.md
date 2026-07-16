@@ -5,15 +5,30 @@ Running log for the implementation. Keep it short. Update it as work progresses 
 ## Completed
 
 - Planning documentation created (README, PRD, architecture, rules, design, phases, testing, memory, launch-checklist, .env.example).
+- Phase 1 (draft and print) and Phase 2 (commit with confirmation) complete.
+- Phase 3 (edit and regenerate) complete, all 5 commits: parse accept/edit/regenerate/quit
+  choices, edit in `$EDITOR`, reject an empty edited message, regenerate with a second API
+  call, `--edit` flag. Phase verification checklist passed (pytest/ruff/black clean,
+  `aicommit --version` runs, no-staged/not-a-repo/missing-key exit codes verified manually).
 
 ## In progress
 
-_Nothing yet. Record the current task, the approach, and anything half-finished here. If a bug resists two fix attempts, stop and write what was tried and the current theory (see `docs/rules.md` — Boundaries)._
+- Starting Phase 4 (UX and controls polish): spinner, `--type`/`--scope`, `--quiet`/`--verbose`,
+  `NO_COLOR`, large-diff fallback, binary handling, config file. Working through the 6 commits
+  in `docs/phases.md` order.
 
 ## Decisions log
 
 _Record notable decisions and any deviation flags here, newest first. Do not change `docs/PRD.md` or `docs/architecture.md` without flagging it here first._
 
+- Bug found and fixed during Phase 3 verification (not a scope change, a correctness fix to
+  already-shipped Phase 1 behavior): `draft_message` called `anthropic.Anthropic()` and
+  `messages.create` without ever checking `ANTHROPIC_API_KEY` up front. When the key is
+  completely unset, the SDK raises a plain `TypeError` (not `AuthenticationError`), which fell
+  through to the generic "Unexpected error" exit 1 instead of the documented exit 5. Fixed by
+  checking `ANTHROPIC_API_KEY` before constructing the client, but only when the default
+  `client_factory` (`anthropic.Anthropic`) is in use, so mocked tests with an injected fake
+  client are unaffected. Verified manually: unset key now exits 5 with the documented message.
 - Default model is `claude-opus-4-8`; overridable via `--model` and `AICOMMIT_MODEL`.
 - CLI framework: `click` (not Typer), to keep the dependency surface small and behavior explicit.
 - Commit creation uses `git commit -F <tmpfile>` so multi-line bodies survive intact.
