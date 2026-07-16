@@ -245,6 +245,36 @@ def test_no_spinner_off_a_tty(temp_git_repo, monkeypatch) -> None:
     assert texts == []
 
 
+def test_quiet_suppresses_spinner(temp_git_repo, monkeypatch) -> None:
+    monkeypatch.setattr(
+        "aicommit.cli.draft_message",
+        lambda diff, config: "fix(cli): handle empty diff",
+    )
+    monkeypatch.setattr(cli._stdout, "_force_terminal", True)
+    texts: list[str] = []
+    monkeypatch.setattr(cli._stdout, "status", _FakeStatus(texts))
+    runner = CliRunner()
+    result = runner.invoke(main, ["--quiet"], input="a\n")
+    assert result.exit_code == 0
+    assert texts == []
+
+
+def test_verbose_emits_structured_logs_without_key_or_diff(
+    temp_git_repo, monkeypatch
+) -> None:
+    monkeypatch.setattr(
+        "aicommit.cli.draft_message",
+        lambda diff, config: "fix(cli): handle empty diff",
+    )
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-super-secret-value")
+    runner = CliRunner()
+    result = runner.invoke(main, ["--verbose", "--yes"])
+    assert result.exit_code == 0
+    assert "event=draft" in result.output
+    assert "model=" in result.output
+    assert "sk-super-secret-value" not in result.output
+
+
 def test_type_and_scope_flags_reach_config(temp_git_repo, monkeypatch) -> None:
     seen: dict = {}
 
