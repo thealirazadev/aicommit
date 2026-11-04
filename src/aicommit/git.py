@@ -69,7 +69,7 @@ def create_commit(message: str) -> str:
     """Create a commit via `git commit -F <tmpfile>`; return the short SHA."""
     fd, tmp_path = tempfile.mkstemp(suffix=".txt")
     try:
-        with os.fdopen(fd, "w") as tmp_file:
+        with os.fdopen(fd, "w", encoding="utf-8") as tmp_file:
             tmp_file.write(message)
         result = _run_git(["commit", "-F", tmp_path])
         if result.returncode != 0:

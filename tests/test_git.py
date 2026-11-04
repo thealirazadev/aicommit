@@ -1,6 +1,8 @@
 """Tests for git subprocess wrappers: repo detection and diff reading."""
 
+import os
 import subprocess
+import sys
 
 import pytest
 
@@ -92,6 +94,22 @@ def test_create_commit_writes_exact_message(temp_git_repo) -> None:
     )
     # git normalizes the trailing newline on commit; compare content, not that.
     assert result.stdout.rstrip("\n") == message.rstrip("\n")
+
+
+def test_create_commit_writes_utf8_under_ascii_locale(temp_git_repo) -> None:
+    # Draft messages can contain non-ASCII text; a C locale must not break them.
+    script = "from aicommit import git; git.create_commit('feat: add caf\\u00e9')"
+    env = {**os.environ, "LC_ALL": "C", "LANG": "C", "PYTHONUTF8": "0"}
+    subprocess.run(
+        [sys.executable, "-c", script], cwd=temp_git_repo, env=env, check=True
+    )
+    result = subprocess.run(
+        ["git", "log", "-1", "--pretty=%B"],
+        cwd=temp_git_repo,
+        capture_output=True,
+        check=True,
+    )
+    assert result.stdout.decode("utf-8").strip() == "feat: add caf\u00e9"
 
 
 def test_create_commit_returns_short_sha(temp_git_repo) -> None:
