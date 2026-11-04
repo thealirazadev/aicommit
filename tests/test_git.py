@@ -129,3 +129,15 @@ def test_create_commit_raises_on_failure(temp_git_repo) -> None:
     git.create_commit("feat: add example\n")
     with pytest.raises(GitCommitError):
         git.create_commit("feat: add example again\n")
+
+
+def test_read_staged_diff_raises_on_git_failure(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(GitCommitError):
+        git.read_staged_diff()
+
+
+def test_read_staged_diffstat_raises_on_git_failure(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(GitCommitError):
+        git.read_staged_diffstat()

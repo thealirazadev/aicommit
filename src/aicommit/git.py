@@ -24,6 +24,13 @@ def _run_git(args: list[str]) -> subprocess.CompletedProcess[str]:
     )
 
 
+def _raise_on_failure(result: subprocess.CompletedProcess[str]) -> None:
+    """Raise GitCommitError with git's first stderr line if git exited non-zero."""
+    if result.returncode != 0:
+        lines = (result.stderr or result.stdout).strip().splitlines()
+        raise GitCommitError(lines[0] if lines else "unknown error")
+
+
 def is_inside_git_repo() -> bool:
     """Return True if the current directory is inside a git working tree."""
     result = _run_git(["rev-parse", "--is-inside-work-tree"])
@@ -33,12 +40,14 @@ def is_inside_git_repo() -> bool:
 def read_staged_diff() -> str:
     """Return the staged diff produced by `git diff --cached`."""
     result = _run_git(["diff", "--cached"])
+    _raise_on_failure(result)
     return result.stdout
 
 
 def read_staged_diffstat() -> str:
     """Return the diffstat summary produced by `git diff --cached --stat`."""
     result = _run_git(["diff", "--cached", "--stat"])
+    _raise_on_failure(result)
     return result.stdout
 
 
@@ -72,9 +81,7 @@ def create_commit(message: str) -> str:
         with os.fdopen(fd, "w", encoding="utf-8") as tmp_file:
             tmp_file.write(message)
         result = _run_git(["commit", "-F", tmp_path])
-        if result.returncode != 0:
-            lines = (result.stderr or result.stdout).strip().splitlines()
-            raise GitCommitError(lines[0] if lines else "unknown error")
+        _raise_on_failure(result)
     finally:
         os.unlink(tmp_path)
     return _run_git(["rev-parse", "--short", "HEAD"]).stdout.strip()
