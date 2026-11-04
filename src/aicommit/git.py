@@ -10,8 +10,18 @@ from aicommit.errors import GitCommitError, NoStagedChangesError, NotAGitRepoErr
 
 
 def _run_git(args: list[str]) -> subprocess.CompletedProcess[str]:
-    """Run a git subcommand with an explicit argument list and capture output."""
-    return subprocess.run(["git", *args], capture_output=True, text=True)
+    """Run a git subcommand with an explicit argument list and capture output.
+
+    Output is decoded as UTF-8 with invalid bytes replaced, so a diff that
+    touches non-UTF-8 files (or a non-UTF-8 locale) cannot crash the run.
+    """
+    return subprocess.run(
+        ["git", *args],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
 
 
 def is_inside_git_repo() -> bool:

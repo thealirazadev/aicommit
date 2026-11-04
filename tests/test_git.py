@@ -48,6 +48,14 @@ def test_read_staged_diff_does_not_inline_binary_content(temp_git_repo) -> None:
     assert bytes(range(256)).decode("latin1") not in diff
 
 
+def test_read_staged_diff_tolerates_non_utf8_content(temp_git_repo) -> None:
+    (temp_git_repo / "latin1.txt").write_bytes(b"caf\xe9\n")
+    subprocess.run(["git", "add", "latin1.txt"], cwd=temp_git_repo, check=True)
+    diff = git.read_staged_diff()
+    assert "latin1.txt" in diff
+    assert "caf\ufffd" in diff
+
+
 def test_build_diff_payload_summarizes_oversized_diff(temp_git_repo) -> None:
     diff = git.read_staged_diff()
     payload, was_summarized = git.build_diff_payload(diff, max_diff_bytes=5)
