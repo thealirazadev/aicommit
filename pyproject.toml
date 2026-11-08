@@ -26,6 +26,7 @@ dependencies = [
     "anthropic==0.116.0",
     "click==8.4.2",
     "rich==15.0.0",
+    "tomli==2.5.0; python_version < '3.11'",
 ]
 
 [project.optional-dependencies]

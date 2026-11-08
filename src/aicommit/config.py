@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 import os
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-import tomllib
+if sys.version_info >= (3, 11):
+    import tomllib
+else:  # pragma: no cover - exercised by the 3.10 CI job
+    import tomli as tomllib
 
 from aicommit.errors import ConfigError
 
