@@ -11,6 +11,7 @@ from rich.panel import Panel
 from aicommit.errors import EmptyMessageError
 
 _WORDS = {"a": "accept", "e": "edit", "r": "regenerate", "q": "quit"}
+PROMPT = r"\[a]ccept  \[e]dit  \[r]egenerate  \[q]uit > "
 
 
 def present_message(console: Console, message: str) -> None:
@@ -42,7 +43,8 @@ def prompt_choice(console: Console, *, stream: IO[str] | None = None) -> str:
     """
     while True:
         raw = (
-            console.input("[a]ccept  [e]dit  [r]egenerate  [q]uit > ", stream=stream)
+            # Escaped: rich would read "[a]" as a style tag and drop the letter.
+            console.input(PROMPT, stream=stream)
             .strip()
             .lower()
         )

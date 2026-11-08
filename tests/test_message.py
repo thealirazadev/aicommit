@@ -84,3 +84,10 @@ def test_edit_message_raises_on_blank_save(monkeypatch) -> None:
     monkeypatch.setattr("aicommit.message.click.edit", lambda text: "   \n")
     with pytest.raises(EmptyMessageError):
         edit_message("feat: original")
+
+
+def test_prompt_shows_every_choice_letter() -> None:
+    output = io.StringIO()
+    console = Console(file=output, force_terminal=False, width=80)
+    prompt_choice(console, stream=io.StringIO("a\n"))
+    assert "[a]ccept  [e]dit  [r]egenerate  [q]uit >" in output.getvalue()
