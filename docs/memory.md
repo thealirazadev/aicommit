@@ -38,7 +38,21 @@ _Record notable decisions and any deviation flags here, newest first. Do not cha
   checking `ANTHROPIC_API_KEY` before constructing the client, but only when the default
   `client_factory` (`anthropic.Anthropic`) is in use, so mocked tests with an injected fake
   client are unaffected. Verified manually: unset key now exits 5 with the documented message.
-- Default model is `claude-opus-4-8`; overridable via `--model` and `AICOMMIT_MODEL`.
+- Default model is `claude-opus-5-5` (was `claude-opus-4-8` until 2026-11-09); overridable via `--model` and `AICOMMIT_MODEL`.
 - CLI framework: `click` (not Typer), to keep the dependency surface small and behavior explicit.
 - Commit creation uses `git commit -F <tmpfile>` so multi-line bodies survive intact.
 - Package uses a `src/` layout; lockfile is `uv.lock` (fallback `requirements.lock` via pip-tools if `uv` is unavailable).
+
+## Real-model manual run (2026-11-09)
+
+- Ran the phase 1 and phase 3 manual checklists in a scratch repo against Claude Opus 5.5 via a
+  local Anthropic-Messages shim (calls the Claude Code CLI; outside the repo). The staged diff
+  (a new `divide` with a zero guard) produced `feat(calc): add divide function with
+  zero-division guard` plus a body; accept committed the exact message, quit exited 130 with no
+  commit, `--yes` committed, `--dry-run --yes` exited 2; exit codes 3 (nothing staged), 4
+  (outside repo), 5 (unset key, and a wrong key against the real API), 6 (unreachable base URL,
+  no traceback).
+- Fixed: the interactive prompt rendered as `ccept  dit  egenerate  uit` because rich read
+  `[a]`, `[e]`, `[r]`, `[q]` as style tags; the brackets are now escaped, with a test.
+- **Flagged architecture.md/rules.md change:** default model `claude-opus-4-8` ->
+  `claude-opus-5-5` (the id only).

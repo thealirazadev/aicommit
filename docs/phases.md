@@ -13,20 +13,20 @@ Lay the foundation and get a drafted message out of the tool. At the end of this
 - The package installs and exposes the `aicommit` console command (`pip install -e .` / `uv sync`, then `aicommit --version` works).
 - `pyproject.toml` declares the entry point, exact-pinned dependencies, and Python 3.10+; the lockfile is committed.
 - With staged changes, `aicommit` prints a Conventional Commit message whose subject matches `^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?!?: .+` and contains no attribution lines.
-- The model id resolves from `--model` > `AICOMMIT_MODEL` > built-in default (`claude-opus-4-8`). (Config file support is deferred to Phase 4.)
+- The model id resolves from `--model` > `AICOMMIT_MODEL` > built-in default (`claude-opus-5-5`). (Config file support is deferred to Phase 4.)
 - These errors work with the documented exit codes and one-line messages: no staged changes (3), not a git repo (4), missing/invalid API key (5), network/rate-limit/5xx (6).
 - No raw traceback is printed by default.
 - `pytest`, `ruff check .`, and `black --check .` pass. The API is mocked in tests.
 
 ### Manual test checklist
 
-- [ ] In a git repo with staged changes, run `aicommit`; a plausible message prints.
-- [ ] `aicommit --version` prints the version; `aicommit --help` prints help.
-- [ ] `aicommit --model claude-opus-4-8` targets that model (verify via `--verbose` log or a mocked assertion).
-- [ ] With nothing staged, exit code is 3 and the message names `git add`.
-- [ ] Outside any git repo, exit code is 4.
-- [ ] With `ANTHROPIC_API_KEY` unset or wrong, exit code is 5.
-- [ ] With the network unreachable, exit code is 6 and no traceback appears.
+- [x] In a git repo with staged changes, run `aicommit`; a plausible message prints.
+- [x] `aicommit --version` prints the version; `aicommit --help` prints help.
+- [x] `aicommit --model claude-opus-5-5` targets that model (verify via `--verbose` log or a mocked assertion).
+- [x] With nothing staged, exit code is 3 and the message names `git add`.
+- [x] Outside any git repo, exit code is 4.
+- [x] With `ANTHROPIC_API_KEY` unset or wrong, exit code is 5.
+- [x] With the network unreachable, exit code is 6 and no traceback appears.
 
 ### Commits
 
@@ -59,11 +59,11 @@ Turn the printer into a committer. Present the draft and let the user accept or 
 
 ### Manual test checklist
 
-- [ ] Run `aicommit`, choose accept; the commit exists with the exact message.
-- [ ] Run `aicommit`, choose quit; no commit is created, exit 130.
-- [ ] `aicommit --dry-run` prints and does not commit.
-- [ ] `aicommit --yes` commits the first draft with no prompt.
-- [ ] `aicommit --dry-run --yes` exits 2 with a usage error.
+- [x] Run `aicommit`, choose accept; the commit exists with the exact message.
+- [x] Run `aicommit`, choose quit; no commit is created, exit 130.
+- [x] `aicommit --dry-run` prints and does not commit.
+- [x] `aicommit --yes` commits the first draft with no prompt.
+- [x] `aicommit --dry-run --yes` exits 2 with a usage error.
 - [ ] A multi-line body survives into `git log -1 --pretty=%B` unchanged.
 
 ### Commits
