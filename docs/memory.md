@@ -28,17 +28,8 @@ _Nothing in progress. All four phases in `docs/phases.md` are complete._
 
 _Record notable decisions and any deviation flags here, newest first. Do not change `docs/PRD.md` or `docs/architecture.md` without flagging it here first._
 
-- **Flag for follow-up (not silently resolved):** the config-file loader uses the standard
-  library `tomllib`, which only exists on Python 3.11+. `pyproject.toml` still declares
-  `requires-python = ">=3.10"` (per Phase 1 and `docs/rules.md`). On a real Python 3.10
-  install, `import tomllib` in `config.py` will fail at import time, breaking the whole CLI,
-  since `config.py` is imported unconditionally. `docs/rules.md` anticipates this ("`tomllib`
-  (Python 3.11+) or `tomli` on 3.10") but adding `tomli` as a conditional dependency needs
-  approval per the dependency-approval boundary, so it was not added here. The dev/test
-  environment for this session is Python 3.12, so tests pass, but Python 3.10 users are
-  currently broken. Needs a decision: add `tomli` as a conditional dependency for `<3.11`, or
-  raise the minimum supported Python to 3.11 in the PRD/architecture (the latter would need
-  explicit sign-off since it changes `docs/architecture.md`).
+- Python 3.10 support: the config loader uses `tomllib` on 3.11+ and the `tomli` backport on
+  3.10 (a conditional dependency, as `docs/rules.md` specifies). CI runs the suite on 3.10 and 3.13.
 - Bug found and fixed during Phase 3 verification (not a scope change, a correctness fix to
   already-shipped Phase 1 behavior): `draft_message` called `anthropic.Anthropic()` and
   `messages.create` without ever checking `ANTHROPIC_API_KEY` up front. When the key is
