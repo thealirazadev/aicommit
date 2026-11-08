@@ -86,7 +86,7 @@ Rationale for the `src/` layout: it prevents the tests from importing the packag
 
 ## Model call
 
-Default model: `claude-opus-4-8` (override with `--model` or `AICOMMIT_MODEL`). The request is a single non-streaming Messages API call:
+Default model: `claude-opus-5-5` (override with `--model` or `AICOMMIT_MODEL`). The request is a single non-streaming Messages API call:
 
 ```python
 # model.py (shape, not final code)
@@ -94,7 +94,7 @@ import anthropic
 
 client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY from the environment
 response = client.messages.create(
-    model=cfg.model,             # default "claude-opus-4-8"
+    model=cfg.model,             # default "claude-opus-5-5"
     max_tokens=1024,             # a commit message is small; well within timeout limits
     system=SYSTEM_PROMPT,        # instructions from prompt.py
     messages=[{"role": "user", "content": user_prompt}],
@@ -116,7 +116,7 @@ The tool holds no persistent state beyond an optional config file. Configuration
 
 | Field           | Type            | Default            | Source order (lowest first)                 |
 | --------------- | --------------- | ------------------ | ------------------------------------------- |
-| `model`         | `str`           | `claude-opus-4-8`  | built-in < config file < `AICOMMIT_MODEL` < `--model` |
+| `model`         | `str`           | `claude-opus-5-5`  | built-in < config file < `AICOMMIT_MODEL` < `--model` |
 | `commit_type`   | `str \| None`   | `None`             | built-in < config file < `--type`           |
 | `scope`         | `str \| None`   | `None`             | built-in < config file < `--scope`          |
 | `max_diff_bytes`| `int`           | `100000`           | built-in < config file                      |
@@ -131,7 +131,7 @@ Optional config file (TOML), searched in this order, first found wins:
 Example config file:
 
 ```toml
-model = "claude-opus-4-8"
+model = "claude-opus-5-5"
 # type = "feat"
 # scope = "cli"
 max_diff_bytes = 100000

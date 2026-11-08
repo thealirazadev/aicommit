@@ -14,7 +14,7 @@ else:  # pragma: no cover - exercised by the 3.10 CI job
 
 from aicommit.errors import ConfigError
 
-DEFAULT_MODEL = "claude-opus-4-8"
+DEFAULT_MODEL = "claude-opus-5-5"
 DEFAULT_MAX_DIFF_BYTES = 100_000
 CONFIG_FILENAME = ".aicommit.toml"
 

@@ -27,7 +27,7 @@ These rules are binding for anyone implementing aicommit. When something here co
 - **Modules:** `snake_case`, one responsibility each (`git.py`, `prompt.py`, `model.py`, `message.py`, `config.py`, `errors.py`, `logging.py`, `cli.py`). PEP 8.
 - **Functions:** `snake_case`, verb-first, action-describing: `read_staged_diff`, `build_prompt`, `draft_message`, `present_and_choose`, `create_commit`, `load_config`.
 - **Variables:** `snake_case`, descriptive (`staged_diff`, `draft`, `commit_type`, `exit_code`). Avoid one-letter names except short loop indices.
-- **Constants:** `UPPER_SNAKE_CASE` (`DEFAULT_MODEL = "claude-opus-4-8"`, `SYSTEM_PROMPT`).
+- **Constants:** `UPPER_SNAKE_CASE` (`DEFAULT_MODEL = "claude-opus-5-5"`, `SYSTEM_PROMPT`).
 - **Classes/exceptions:** `PascalCase` (`Config`, `AicommitError`, `NoStagedChangesError`).
 
 ### Commit format (for building this tool)

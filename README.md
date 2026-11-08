@@ -18,7 +18,7 @@ aicommit is a command-line tool that reads your staged git diff, asks the Anthro
 - Python 3.10+ CLI packaged with `pyproject.toml`, exposing a console entry point named `aicommit`.
 - [`click`](https://click.palletsprojects.com/) for the command-line interface.
 - [`rich`](https://rich.readthedocs.io/) for colored output and the progress spinner.
-- [`anthropic`](https://pypi.org/project/anthropic/) SDK targeting the Claude Messages API (default model `claude-opus-4-8`).
+- [`anthropic`](https://pypi.org/project/anthropic/) SDK targeting the Claude Messages API (default model `claude-opus-5-5`).
 - Git access through the `git` executable via `subprocess` (no libgit2 dependency).
 - `pytest` for tests, with the Anthropic API mocked (no network in the test suite).
 - `ruff` and `black` for linting and formatting.
@@ -81,7 +81,7 @@ aicommit --type fix --scope parser   # force the type and scope
 aicommit --dry-run                   # print the draft, do not commit
 aicommit --yes                       # accept the first draft, commit immediately
 aicommit --edit                      # open the draft in $EDITOR before committing
-aicommit --model claude-opus-4-8     # override the model
+aicommit --model claude-opus-5-5     # override the model
 aicommit --verbose                   # detailed logs on stderr
 ```
 
