@@ -148,7 +148,7 @@ If no config file exists, defaults apply. A malformed config file is a friendly 
 
 ## External dependencies and required environment variables
 
-Runtime dependencies (pinned exactly in `pyproject.toml` and `uv.lock` — see `docs/rules.md`):
+Runtime dependencies (pinned exactly in `pyproject.toml` and locked in `uv.lock`):
 
 - `anthropic` — Claude Messages API SDK.
 - `click` — CLI framework.

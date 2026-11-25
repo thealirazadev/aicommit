@@ -98,7 +98,7 @@ Actions:
 | 7    | git commit failed.                                           |
 | 130  | Aborted by the user (quit at the prompt or Ctrl-C).          |
 
-These are the single source of truth for exit codes and must match `docs/rules.md`.
+These are the single source of truth for exit codes; `src/aicommit/errors.py` defines the matching error classes.
 
 ## --quiet / --verbose
 

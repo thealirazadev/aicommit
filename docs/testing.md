@@ -1,36 +1,41 @@
-# Testing — aicommit
+# Testing: aicommit
 
 ## Strategy
 
-Two layers, no network:
+The automated suite is `pytest` and never touches the network:
 
-1. **Unit tests (`pytest`)** — each module tested in isolation. The Anthropic API is **always mocked**; the test suite must never make a real network call or require `ANTHROPIC_API_KEY`. Git is exercised against real temporary repositories created in a tmp dir (git is fast and deterministic), or mocked at the `subprocess` boundary where a real repo is overkill.
-   - `test_git.py` — repo detection, staged-diff reading (empty vs non-empty), commit creation, git-failure handling. Uses a real temp repo via a fixture.
-   - `test_prompt.py` — the prompt builder includes the diff and honors `--type`/`--scope`; asserts the system prompt forbids attribution.
-   - `test_model.py` — `draft_message` with a fake Anthropic client: returns text on success; maps `AuthenticationError` -> `AuthError` (exit 5), `RateLimitError`/`APIConnectionError`/`APITimeoutError`/`APIStatusError(>=500)` -> `ApiError` (exit 6).
-   - `test_config.py` — precedence (default < file < env < flag); malformed config file -> friendly error.
-   - `test_message.py` — choice parsing (a/e/r/q + words, default, invalid re-prompt); empty-edit rejection; cleaning of model output (strip code fences/attribution if present).
-   - `test_cli.py` — end-to-end through click's `CliRunner` with the API mocked: dry-run prints and does not commit; `--yes` commits; accept commits; quit exits 130; exit codes for the unhappy paths.
+- The Anthropic API is always mocked. The suite must never make a real network call or require `ANTHROPIC_API_KEY`. `model.draft_message` takes a `client_factory`, and the CLI tests monkeypatch `aicommit.cli.draft_message`, so no real `anthropic.Anthropic()` is used.
+- Git is exercised against real temporary repositories created in a tmp dir (git is fast and deterministic).
 
-2. **Manual QA** — the checklists in `docs/phases.md`. These cover real editor interaction (`--edit`), the live spinner, TTY color, `NO_COLOR`, and a genuine end-to-end run against the real API. Manual QA is required before a phase is considered done, but is not part of the automated suite.
+Test modules:
+
+- `test_git.py`: repo detection, staged-diff reading (empty vs non-empty), the diffstat, oversized-diff summarizing, binary files not being inlined, commit creation with the exact message, and git-failure handling. Uses a real temp repo via a fixture.
+- `test_prompt.py`: the prompt builder includes the diff and honors `--type`/`--scope`; the system prompt forbids attribution.
+- `test_model.py`: `draft_message` with a fake Anthropic client: returns text on success and sends the configured model, diff and constraints; maps `AuthenticationError`/`PermissionDeniedError` and a missing key to `AuthError` (exit 5), `RateLimitError`/`APIConnectionError`/`APITimeoutError`/`APIStatusError(>=500)` to `ApiError` (exit 6), and re-raises other status errors.
+- `test_config.py`: precedence (default < file < env < flag), local file over the XDG file, and a malformed config file raising a friendly error.
+- `test_message.py`: choice parsing (a/e/r/q and words, case-insensitive, blank default, invalid re-prompt), the prompt showing every choice letter, and the edit cases (edited text, unchanged editor, blank save).
+- `test_cli.py`: end to end through click's `CliRunner` with drafting mocked: dry-run, `--yes`, accept, quit (130), edit, regenerate (a second draft call), `--edit`, spinner on and off a TTY, `--quiet`, `--verbose` without the key, color and `NO_COLOR`, oversized diffs, and the exit codes for every unhappy path.
+- `test_package.py`: the version is defined and the CLI runs.
+
+Real editor interaction, the live spinner in a terminal and a run against the real API are checked by hand; they are not part of the automated suite.
 
 ### Mocking the API
 
-- Provide a fixture (in `conftest.py`) that supplies a fake Anthropic client whose `messages.create` returns a canned response object shaped like the SDK's (`.content` is a list of blocks with `.type == "text"` and `.text`). Inject it into `model.py` (e.g. via a client factory parameter or `monkeypatch`), so no real `anthropic.Anthropic()` is constructed in tests.
-- To test error mapping, have the fake `messages.create` raise the relevant `anthropic` exception class.
-- Assert on the request when it matters (e.g. the model id, that the diff is present, that type/scope constraints are passed, that no binary content is inlined).
+- `conftest.py` provides a fake Anthropic client whose `messages.create` records its keyword arguments and returns a canned response shaped like the SDK's (`.content` is a list of blocks with `.type == "text"` and `.text`).
+- To test error mapping, the fake `messages.create` raises the relevant `anthropic` exception class.
+- Tests assert on the request where it matters (the model id, that the diff is present, that type/scope constraints are passed).
 
 ### Fixtures
 
-- `sample.diff` under `tests/fixtures/` — a representative staged diff reused across tests.
-- A `temp_git_repo` fixture that `git init`s a tmp dir, configures a throwaway user, and stages a file, so `test_git.py` and `test_cli.py` run against a real repo without touching the developer's repo.
+- `sample.diff` under `tests/fixtures/`: a representative staged diff.
+- `temp_git_repo` `git init`s a tmp dir, configures a throwaway user, stages a file and changes into it; `empty_git_repo` does the same with nothing staged.
 
 ## Exact commands
 
 Development install:
 
 ```sh
-uv sync                       # or: pip install -e ".[dev]"
+uv sync --all-extras          # or: pip install -e ".[dev]"
 ```
 
 Run tests:
@@ -38,8 +43,10 @@ Run tests:
 ```sh
 uv run pytest                 # or: pytest
 uv run pytest -q              # quiet
-uv run pytest tests/test_cli.py::test_accept_commits   # a single test
+uv run pytest tests/test_cli.py::test_accept_creates_commit   # a single test
 ```
+
+`pytest` is configured in `pyproject.toml` to run with `--cov=aicommit`, and coverage fails under 90 percent (`[tool.coverage.report] fail_under = 90`).
 
 Lint and format:
 
@@ -57,13 +64,13 @@ pip install -e .              # confirm the aicommit entry point installs
 aicommit --version
 ```
 
-## Gate
+## CI
 
-**Build and tests must pass before a feature is considered done.** For every commit/feature:
+`.github/workflows/ci.yml` runs on every push and pull request to `main`, on Python 3.10 and 3.13:
 
-1. `uv run pytest` passes (API mocked, no network).
-2. `uv run ruff check .` passes.
-3. `uv run black --check .` passes.
-4. The package still installs and `aicommit --version` runs.
+1. `uv sync --frozen --all-extras` (installs from the committed `uv.lock`; fails if it is out of date).
+2. `uv run ruff check .`
+3. `uv run black --check .`
+4. `uv run pytest` (with the 90 percent coverage gate).
 
-A feature that breaks any of these is not done. Do not commit red tests or a broken build. Add or update tests in the same commit as the feature they cover.
+Run the same three checks locally before pushing.
