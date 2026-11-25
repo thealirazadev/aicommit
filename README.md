@@ -23,7 +23,7 @@ aicommit is a command-line tool that reads your staged git diff, asks the Anthro
 - `pytest` for tests, with the Anthropic API mocked (no network in the test suite).
 - `ruff` and `black` for linting and formatting.
 
-See `docs/architecture.md` for the full design and `docs/phases.md` for the build order.
+See `docs/architecture.md` for the full design and `docs/decisions.md` for the main design decisions.
 
 ## Prerequisites
 
@@ -105,7 +105,7 @@ aicommit/
   pyproject.toml       Packaging, dependencies, and the aicommit entry point.
   uv.lock              Pinned, committed lockfile.
   .env.example         Documented environment variables (dummy values).
-  docs/                Planning and handoff documentation.
+  docs/                Architecture, CLI design, testing, and design decisions.
   src/aicommit/        Application source (CLI, git, prompt, model, config).
   tests/               pytest suite with the API mocked.
 ```
