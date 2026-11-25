@@ -13,6 +13,27 @@ from aicommit.prompt import SYSTEM_PROMPT, build_prompt
 
 ClientFactory = Callable[[], anthropic.Anthropic]
 
+_FENCE = "```"
+
+
+def clean_message(text: str) -> str:
+    """Turn raw model output into commit message text.
+
+    Trims surrounding whitespace and removes a Markdown code fence wrapped around
+    the whole message: an opening line of three backticks (optionally followed by
+    a language tag) and a closing line of three backticks. Models add one now and
+    then despite the prompt, and committed as is the fence line would become the
+    commit subject.
+    """
+    lines = text.strip().splitlines()
+    if (
+        len(lines) >= 2
+        and lines[0].strip().startswith(_FENCE)
+        and lines[-1].strip() == _FENCE
+    ):
+        lines = lines[1:-1]
+    return "\n".join(lines).strip()
+
 
 def draft_message(
     diff: str,
@@ -63,4 +84,8 @@ def draft_message(
                 detail=str(error),
             ) from error
         raise
-    return "".join(block.text for block in response.content if block.type == "text")
+    text = "".join(block.text for block in response.content if block.type == "text")
+    message = clean_message(text)
+    if not message:
+        raise ApiError("The Anthropic API returned an empty message. Try again.")
+    return message

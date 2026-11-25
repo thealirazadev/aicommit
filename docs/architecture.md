@@ -170,4 +170,4 @@ Environment variables:
 | `EDITOR`            | No       | message.py (edit)  | Editor used by `--edit`; falls back to click's default.        |
 | `NO_COLOR`          | No       | logging/console    | If set (any value), disables colored output.                   |
 
-A `.env` file in the working directory may be loaded for convenience (document this behavior; keep it optional and do not require a dotenv library if the SDK/shell already provides the variable).
+A `.env` file at the root of the current repository is loaded at startup by a small stdlib parser in `config.py` (`KEY=VALUE` lines, `#` comments, an optional `export ` prefix, optional quotes). Only `ANTHROPIC_API_KEY` and `AICOMMIT_MODEL` are taken from it, and a variable already set in the environment is never overridden.

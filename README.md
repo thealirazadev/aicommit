@@ -10,7 +10,7 @@ aicommit is a command-line tool that reads your staged git diff, asks the Anthro
 - Override the commit `--type` and `--scope`; nudge regenerations without retyping.
 - `--dry-run` prints the draft without committing; `--yes` accepts the first draft non-interactively.
 - Colored output and a spinner via `rich`; honors `NO_COLOR` and `--no-color`.
-- Friendly, specific errors for the common failures: nothing staged, not a git repo, missing/invalid API key, network/rate-limit errors, oversized or binary diffs.
+- Friendly, specific errors for the common failures: nothing staged, not a git repo, missing/invalid API key, network/rate-limit errors, a malformed config file. Oversized diffs are summarized with a warning instead of failing.
 - Configurable model via `--model`, the `AICOMMIT_MODEL` environment variable, or a config file.
 
 ## Tech stack
@@ -55,13 +55,13 @@ uv sync            # or: pip install -e ".[dev]"
 
 ## Configure
 
-Export your key (or put it in a `.env` file in the project you are committing in):
+Export your key (or put it in a `.env` file at the root of the repository you are committing in):
 
 ```sh
 export ANTHROPIC_API_KEY="sk-ant-..."
 ```
 
-Copy `.env.example` to `.env` and fill it in. `AICOMMIT_MODEL` is optional and overrides the default model.
+Copy `.env.example` to `.env` and fill it in. `AICOMMIT_MODEL` is optional and overrides the default model. Only `ANTHROPIC_API_KEY` and `AICOMMIT_MODEL` are read from `.env`, and a variable already set in your environment always wins.
 
 ## Usage
 

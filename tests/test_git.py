@@ -103,3 +103,49 @@ def test_create_commit_raises_on_failure(temp_git_repo) -> None:
     git.create_commit("feat: add example\n")
     with pytest.raises(GitCommitError):
         git.create_commit("feat: add example again\n")
+
+
+def test_repo_root_inside_and_outside_a_repo(
+    temp_git_repo, tmp_path, monkeypatch
+) -> None:
+    (temp_git_repo / "sub").mkdir()
+    monkeypatch.chdir(temp_git_repo / "sub")
+    assert git.repo_root() == temp_git_repo.resolve()
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    monkeypatch.chdir(outside)
+    assert git.repo_root() is None
+
+
+def test_read_staged_diff_ignores_forced_color_config(temp_git_repo) -> None:
+    subprocess.run(
+        ["git", "config", "color.ui", "always"], cwd=temp_git_repo, check=True
+    )
+    diff = git.read_staged_diff()
+    stat = git.read_staged_diffstat()
+    assert "+hello" in diff
+    assert "\x1b[" not in diff
+    assert "\x1b[" not in stat
+
+
+def test_read_staged_diff_does_not_run_external_diff(temp_git_repo) -> None:
+    subprocess.run(
+        ["git", "config", "diff.external", "echo EXTERNAL-DIFF"],
+        cwd=temp_git_repo,
+        check=True,
+    )
+    diff = git.read_staged_diff()
+    assert "EXTERNAL-DIFF" not in diff
+    assert "+hello" in diff
+
+
+def test_create_commit_preserves_non_ascii_message(temp_git_repo) -> None:
+    message = "feat: support caf\u00e9 names \u2713"
+    git.create_commit(message)
+    result = subprocess.run(
+        ["git", "log", "-1", "--pretty=%B"],
+        cwd=temp_git_repo,
+        capture_output=True,
+        check=True,
+    )
+    assert result.stdout.decode("utf-8").strip() == message

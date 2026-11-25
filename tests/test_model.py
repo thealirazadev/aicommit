@@ -6,12 +6,30 @@ import pytest
 
 from aicommit.config import Config
 from aicommit.errors import ApiError, AuthError
-from aicommit.model import draft_message
+from aicommit.model import clean_message, draft_message
 
 
 def _response(status_code: int) -> httpx.Response:
     request = httpx.Request("POST", "https://api.anthropic.com/v1/messages")
     return httpx.Response(status_code, request=request)
+
+
+class _TextBlock:
+    type = "text"
+
+    def __init__(self, text: str) -> None:
+        self.text = text
+
+
+class _TextClient:
+    """Fake client whose `messages.create` returns one text block."""
+
+    def __init__(self, text: str) -> None:
+        self._text = text
+        self.messages = self
+
+    def create(self, **kwargs):
+        return type("Response", (), {"content": [_TextBlock(self._text)]})()
 
 
 class _RaisingClient:
@@ -127,3 +145,40 @@ def test_client_status_error_is_not_swallowed() -> None:
     client = _RaisingClient(error)
     with pytest.raises(anthropic.APIStatusError):
         draft_message("diff", Config(), client_factory=lambda: client)
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ("feat: add x", "feat: add x"),
+        ("  \nfeat: add x\n\n", "feat: add x"),
+        ("```\nfeat: add x\n```", "feat: add x"),
+        (
+            "```text\nfix(cli): handle y\n\nBody line.\n```\n",
+            "fix(cli): handle y\n\nBody line.",
+        ),
+        ("```git-commit\ndocs: z\n```", "docs: z"),
+        ("feat: keep `inline` code", "feat: keep `inline` code"),
+        (
+            "feat: add x\n\n```\nexample block\n```",
+            "feat: add x\n\n```\nexample block\n```",
+        ),
+    ],
+)
+def test_clean_message(raw: str, expected: str) -> None:
+    assert clean_message(raw) == expected
+
+
+def test_draft_message_strips_code_fence_from_model_output() -> None:
+    client = _TextClient("```\nfeat(api): add pagination\n```")
+    result = draft_message(
+        "diff --git a/f b/f\n", Config(), client_factory=lambda: client
+    )
+    assert result == "feat(api): add pagination"
+
+
+def test_draft_message_empty_output_raises_api_error() -> None:
+    client = _TextClient("```\n\n```")
+    with pytest.raises(ApiError) as excinfo:
+        draft_message("diff --git a/f b/f\n", Config(), client_factory=lambda: client)
+    assert excinfo.value.exit_code == 6

@@ -24,6 +24,12 @@ def test_present_message_shows_text() -> None:
     assert "Body text." in output
 
 
+def test_present_message_shows_brackets_verbatim() -> None:
+    console, buffer = _console()
+    present_message(console, "fix(parser): accept [x] and [bold] markers")
+    assert "accept [x] and [bold] markers" in buffer.getvalue()
+
+
 def test_prompt_choice_blank_defaults_to_accept() -> None:
     console, _ = _console()
     choice = prompt_choice(console, stream=io.StringIO("\n"))

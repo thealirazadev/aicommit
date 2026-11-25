@@ -1,8 +1,10 @@
 """Tests for configuration resolution precedence."""
 
+import os
+
 import pytest
 
-from aicommit.config import DEFAULT_MODEL, load_config
+from aicommit.config import DEFAULT_MODEL, load_config, load_env_file
 from aicommit.errors import ConfigError
 
 
@@ -104,3 +106,65 @@ def test_malformed_config_file_raises_config_error(tmp_path) -> None:
     (tmp_path / ".aicommit.toml").write_text("this is not [valid toml\n")
     with pytest.raises(ConfigError):
         load_config()
+
+
+@pytest.mark.parametrize(
+    ("content", "detail"),
+    [
+        ('max_diff_bytes = "big"\n', "max_diff_bytes"),
+        ("max_diff_bytes = 0\n", "max_diff_bytes"),
+        ("max_diff_bytes = true\n", "max_diff_bytes"),
+        ("model = 5\n", "model"),
+        ('scope = ["a"]\n', "scope"),
+    ],
+)
+def test_wrongly_typed_config_value_raises_config_error(
+    tmp_path, content: str, detail: str
+) -> None:
+    (tmp_path / ".aicommit.toml").write_text(content)
+    with pytest.raises(ConfigError) as excinfo:
+        load_config()
+    assert detail in (excinfo.value.detail or "")
+
+
+@pytest.fixture
+def _clean_env_keys(monkeypatch):
+    """Unset the .env keys, and restore them after the test even if a load set them."""
+    for key in ("ANTHROPIC_API_KEY", "AICOMMIT_MODEL", "ANTHROPIC_BASE_URL"):
+        monkeypatch.setenv(key, "placeholder")
+        monkeypatch.delenv(key)
+
+
+def test_load_env_file_sets_allowed_keys(tmp_path, _clean_env_keys) -> None:
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "# comment\n"
+        "\n"
+        "export ANTHROPIC_API_KEY='sk-ant-from-file'\n"
+        "AICOMMIT_MODEL=claude-sonnet-5  # inline comment\n"
+    )
+    loaded = load_env_file(env_file)
+    assert loaded == ["ANTHROPIC_API_KEY", "AICOMMIT_MODEL"]
+    assert os.environ["ANTHROPIC_API_KEY"] == "sk-ant-from-file"
+    assert os.environ["AICOMMIT_MODEL"] == "claude-sonnet-5"
+
+
+def test_load_env_file_never_overrides_environment(
+    tmp_path, monkeypatch, _clean_env_keys
+) -> None:
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-from-shell")
+    env_file = tmp_path / ".env"
+    env_file.write_text("ANTHROPIC_API_KEY=sk-ant-from-file\n")
+    assert load_env_file(env_file) == []
+    assert os.environ["ANTHROPIC_API_KEY"] == "sk-ant-from-shell"
+
+
+def test_load_env_file_ignores_other_keys(tmp_path, _clean_env_keys) -> None:
+    env_file = tmp_path / ".env"
+    env_file.write_text("ANTHROPIC_BASE_URL=https://example.invalid\nNOT_A_PAIR\n")
+    assert load_env_file(env_file) == []
+    assert "ANTHROPIC_BASE_URL" not in os.environ
+
+
+def test_load_env_file_missing_file_is_ignored(tmp_path, _clean_env_keys) -> None:
+    assert load_env_file(tmp_path / ".env") == []
