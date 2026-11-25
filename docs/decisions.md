@@ -112,3 +112,23 @@ safer resolution than an error. Debug records are `event=... key=value` lines wi
 id, diff size in bytes, request duration, the chosen action and the exit code. The key, the
 diff contents and the model output are never passed as fields, and a test checks that the API
 key does not appear in verbose output.
+
+## 13. `.env` is read from the repository root, for two keys only
+
+The README has always offered a `.env` file as an alternative to exporting the key, so the
+CLI loads `<repo root>/.env` before resolving configuration. It uses a small stdlib parser
+instead of adding `python-dotenv`. Because the file belongs to whatever repository you are
+committing in, possibly one you just cloned, only `ANTHROPIC_API_KEY` and `AICOMMIT_MODEL`
+are taken from it: a repository's `.env` must not be able to set `ANTHROPIC_BASE_URL` and
+send your real key to another host. A variable already set in the environment always wins.
+
+## 14. Model output is cleaned before it is shown or committed
+
+The prompt asks for the bare message, but a model sometimes wraps it in a Markdown code
+fence anyway, and committed as is the fence line becomes the subject. `clean_message` trims
+whitespace and removes a fence that wraps the whole message; a fence inside the body is kept.
+An empty result is an `ApiError` (exit 6) rather than an empty commit. The draft is printed as
+`rich.text.Text`, never as a markup string, so brackets such as `[x]` in a message show in the
+preview and in `--dry-run` output exactly as they will be committed. The diff itself is read
+with `--no-color --no-ext-diff`, so a `color.ui = always` or `diff.external` setting in the
+user's git config cannot put escape codes or another tool's output into the prompt.

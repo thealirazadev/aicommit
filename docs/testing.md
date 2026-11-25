@@ -11,8 +11,8 @@ Test modules:
 
 - `test_git.py`: repo detection, staged-diff reading (empty vs non-empty), the diffstat, oversized-diff summarizing, binary files not being inlined, commit creation with the exact message, and git-failure handling. Uses a real temp repo via a fixture.
 - `test_prompt.py`: the prompt builder includes the diff and honors `--type`/`--scope`; the system prompt forbids attribution.
-- `test_model.py`: `draft_message` with a fake Anthropic client: returns text on success and sends the configured model, diff and constraints; maps `AuthenticationError`/`PermissionDeniedError` and a missing key to `AuthError` (exit 5), `RateLimitError`/`APIConnectionError`/`APITimeoutError`/`APIStatusError(>=500)` to `ApiError` (exit 6), and re-raises other status errors.
-- `test_config.py`: precedence (default < file < env < flag), local file over the XDG file, and a malformed config file raising a friendly error.
+- `test_model.py`: `draft_message` with a fake Anthropic client: returns text on success, strips a wrapping code fence, rejects an empty draft, and sends the configured model, diff and constraints; maps `AuthenticationError`/`PermissionDeniedError` and a missing key to `AuthError` (exit 5), `RateLimitError`/`APIConnectionError`/`APITimeoutError`/`APIStatusError(>=500)` to `ApiError` (exit 6), and re-raises other status errors.
+- `test_config.py`: precedence (default < file < env < flag), local file over the XDG file, a malformed or wrongly typed config file raising a friendly error, and the `.env` loader (allowed keys only, never overriding the environment).
 - `test_message.py`: choice parsing (a/e/r/q and words, case-insensitive, blank default, invalid re-prompt), the prompt showing every choice letter, and the edit cases (edited text, unchanged editor, blank save).
 - `test_cli.py`: end to end through click's `CliRunner` with drafting mocked: dry-run, `--yes`, accept, quit (130), edit, regenerate (a second draft call), `--edit`, spinner on and off a TTY, `--quiet`, `--verbose` without the key, color and `NO_COLOR`, oversized diffs, and the exit codes for every unhappy path.
 - `test_package.py`: the version is defined and the CLI runs.

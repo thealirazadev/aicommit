@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import subprocess
 import tempfile
+from pathlib import Path
 
 from aicommit.errors import GitCommitError, NoStagedChangesError, NotAGitRepoError
 
@@ -20,15 +21,29 @@ def is_inside_git_repo() -> bool:
     return result.returncode == 0 and result.stdout.strip() == "true"
 
 
+def repo_root() -> Path | None:
+    """Return the top-level directory of the current work tree, or None."""
+    result = _run_git(["rev-parse", "--show-toplevel"])
+    top = result.stdout.strip()
+    if result.returncode != 0 or not top:
+        return None
+    return Path(top)
+
+
+# Plain diff text regardless of the user's git config: `color.ui = always` would put
+# ANSI codes in the prompt, and `diff.external` would run another program instead.
+_PLAIN_DIFF_FLAGS = ["--no-color", "--no-ext-diff"]
+
+
 def read_staged_diff() -> str:
     """Return the staged diff produced by `git diff --cached`."""
-    result = _run_git(["diff", "--cached"])
+    result = _run_git(["diff", "--cached", *_PLAIN_DIFF_FLAGS])
     return result.stdout
 
 
 def read_staged_diffstat() -> str:
     """Return the diffstat summary produced by `git diff --cached --stat`."""
-    result = _run_git(["diff", "--cached", "--stat"])
+    result = _run_git(["diff", "--cached", "--stat", *_PLAIN_DIFF_FLAGS])
     return result.stdout
 
 
@@ -59,7 +74,7 @@ def create_commit(message: str) -> str:
     """Create a commit via `git commit -F <tmpfile>`; return the short SHA."""
     fd, tmp_path = tempfile.mkstemp(suffix=".txt")
     try:
-        with os.fdopen(fd, "w") as tmp_file:
+        with os.fdopen(fd, "w", encoding="utf-8") as tmp_file:
             tmp_file.write(message)
         result = _run_git(["commit", "-F", tmp_path])
         if result.returncode != 0:

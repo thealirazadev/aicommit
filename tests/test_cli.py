@@ -1,5 +1,6 @@
 """End-to-end CLI tests via click's CliRunner. The API is always mocked."""
 
+import os
 import re
 import subprocess
 
@@ -401,3 +402,33 @@ def test_unexpected_error_exits_1_without_traceback(temp_git_repo, monkeypatch) 
     assert result.exit_code == 1
     assert "Traceback" not in result.output
     assert "boom" not in result.output
+
+
+def test_dry_run_prints_brackets_verbatim(temp_git_repo, monkeypatch) -> None:
+    monkeypatch.setattr(
+        "aicommit.cli.draft_message",
+        lambda diff, config: "fix(parser): accept [x] markers",
+    )
+    runner = CliRunner()
+    result = runner.invoke(main, ["--dry-run", "--no-color"])
+    assert result.exit_code == 0
+    assert "fix(parser): accept [x] markers" in result.output
+
+
+def test_api_key_is_loaded_from_repo_root_dotenv(temp_git_repo, monkeypatch) -> None:
+    for key in ("ANTHROPIC_API_KEY", "AICOMMIT_MODEL"):
+        monkeypatch.setenv(key, "placeholder")
+        monkeypatch.delenv(key)
+    (temp_git_repo / ".env").write_text("ANTHROPIC_API_KEY=sk-ant-from-dotenv\n")
+    (temp_git_repo / "sub").mkdir()
+    monkeypatch.chdir(temp_git_repo / "sub")
+    seen = {}
+
+    def fake_draft(diff, config):
+        seen["key"] = os.environ.get("ANTHROPIC_API_KEY")
+        return "feat: x"
+
+    monkeypatch.setattr("aicommit.cli.draft_message", fake_draft)
+    result = CliRunner().invoke(main, ["--dry-run"])
+    assert result.exit_code == 0
+    assert seen["key"] == "sk-ant-from-dotenv"

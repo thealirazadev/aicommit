@@ -17,6 +17,11 @@ from aicommit.errors import ConfigError
 DEFAULT_MODEL = "claude-opus-5-5"
 DEFAULT_MAX_DIFF_BYTES = 100_000
 CONFIG_FILENAME = ".aicommit.toml"
+ENV_FILENAME = ".env"
+# The only variables taken from a `.env` file. A repository's `.env` is not trusted to
+# set anything else: ANTHROPIC_BASE_URL, for example, would send the API key elsewhere.
+ENV_FILE_KEYS = ("ANTHROPIC_API_KEY", "AICOMMIT_MODEL")
+_STRING_KEYS = ("model", "type", "scope")
 
 
 @dataclass(frozen=True)
@@ -50,9 +55,60 @@ def _load_config_file() -> dict:
         return {}
     try:
         with path.open("rb") as config_file:
-            return tomllib.load(config_file)
+            data = tomllib.load(config_file)
     except (tomllib.TOMLDecodeError, OSError) as error:
         raise ConfigError(str(path), detail=str(error)) from error
+    _validate_config_file(str(path), data)
+    return data
+
+
+def _validate_config_file(path: str, data: dict) -> None:
+    """Raise `ConfigError` if a known key has the wrong type or value."""
+    for key in _STRING_KEYS:
+        if key in data and not isinstance(data[key], str):
+            raise ConfigError(path, detail=f"{key} must be a string")
+    if "max_diff_bytes" in data:
+        value = data["max_diff_bytes"]
+        if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+            raise ConfigError(path, detail="max_diff_bytes must be a positive integer")
+
+
+def _parse_env_value(raw: str) -> str:
+    """Strip matching surrounding quotes, or a trailing ` # comment` when unquoted."""
+    value = raw.strip()
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in ("'", '"'):
+        return value[1:-1]
+    return value.split(" #", 1)[0].strip()
+
+
+def load_env_file(path: Path) -> list[str]:
+    """Load `KEY=VALUE` lines from a `.env` file into the environment.
+
+    Only names in `ENV_FILE_KEYS` are read, and a variable that is already set in
+    the environment is never overridden. Blank lines, `#` comments and an
+    `export ` prefix are accepted. A missing or unreadable file is ignored.
+    Returns the names that were set.
+    """
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return []
+    loaded: list[str] = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        if stripped.startswith("export "):
+            stripped = stripped[len("export ") :]
+        key, separator, raw_value = stripped.partition("=")
+        key = key.strip()
+        if not separator or key not in ENV_FILE_KEYS or key in os.environ:
+            continue
+        value = _parse_env_value(raw_value)
+        if value:
+            os.environ[key] = value
+            loaded.append(key)
+    return loaded
 
 
 def load_config(

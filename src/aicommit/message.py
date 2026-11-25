@@ -7,6 +7,7 @@ from typing import IO
 import click
 from rich.console import Console
 from rich.panel import Panel
+from rich.text import Text
 
 from aicommit.errors import EmptyMessageError
 
@@ -15,8 +16,12 @@ PROMPT = r"\[a]ccept  \[e]dit  \[r]egenerate  \[q]uit > "
 
 
 def present_message(console: Console, message: str) -> None:
-    """Render the drafted message in a bordered panel."""
-    console.print(Panel(message, title="Proposed commit message"))
+    """Render the drafted message in a bordered panel.
+
+    The message is wrapped in `Text` so rich shows it verbatim; as a plain string,
+    brackets such as "[x]" would be parsed as markup and dropped from the preview.
+    """
+    console.print(Panel(Text(message), title="Proposed commit message"))
 
 
 def edit_message(message: str) -> str:

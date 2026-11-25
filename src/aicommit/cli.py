@@ -8,9 +8,10 @@ import time
 
 import click
 from rich.console import Console
+from rich.text import Text
 
 from aicommit import __version__, git
-from aicommit.config import load_config
+from aicommit.config import ENV_FILENAME, load_config, load_env_file
 from aicommit.errors import AicommitError
 from aicommit.logging import configure_logging, log_event
 from aicommit.message import edit_message, present_message, prompt_choice
@@ -143,6 +144,9 @@ def main(
         raise SystemExit(code)
 
     try:
+        root = git.repo_root()
+        if root is not None:
+            load_env_file(root / ENV_FILENAME)
         config = load_config(model=model, commit_type=commit_type, scope=scope)
         diff = git.require_staged_diff()
         diff, was_summarized = git.build_diff_payload(diff, config.max_diff_bytes)
@@ -161,7 +165,8 @@ def main(
             text="Drafting commit message...",
         )
         if dry_run:
-            _stdout.print(message)
+            # Text, not str: rich would read "[x]" in a message as a markup tag.
+            _stdout.print(Text(message))
             _exit(0)
         if edit_:
             message = edit_message(message)
