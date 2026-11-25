@@ -168,3 +168,13 @@ def test_load_env_file_ignores_other_keys(tmp_path, _clean_env_keys) -> None:
 
 def test_load_env_file_missing_file_is_ignored(tmp_path, _clean_env_keys) -> None:
     assert load_env_file(tmp_path / ".env") == []
+
+
+def test_load_env_file_skips_empty_values_and_keeps_quoted_hashes(
+    tmp_path, _clean_env_keys
+) -> None:
+    env_file = tmp_path / ".env"
+    env_file.write_text('ANTHROPIC_API_KEY=""\nAICOMMIT_MODEL="claude #1"\n')
+    assert load_env_file(env_file) == ["AICOMMIT_MODEL"]
+    assert "ANTHROPIC_API_KEY" not in os.environ
+    assert os.environ["AICOMMIT_MODEL"] == "claude #1"
